@@ -1,0 +1,33 @@
+{
+  "app": { "name": "Gamma International ERP" },
+  "nav": {
+    "dashboard": "Dashboard",
+    "leads": "Leads",
+    "offers": "Offers",
+    "orders": "Orders",
+    "invoices": "Invoices",
+    "inventory": "Inventory",
+    "production": "Production",
+    "suppliers": "Suppliers",
+    "shipments": "Shipments",
+    "reports": "Reports",
+    "settings": "Settings"
+  },
+  "categories": {
+    "LED_LIGHTS": "LED Lights",
+    "HEATER_THERMOCOUPLE": "Heater & Thermocouple",
+    "SOLAR_AC": "Solar AC",
+    "TRADE": "Trade"
+  },
+  "branches": {
+    "GI": "Gamma International",
+    "GIE": "Gamma International Egypt",
+    "GEE": "Gamma Egypt for Engineering & Trade"
+  },
+  "auth": {
+    "login": "Sign In",
+    "logout": "Sign Out",
+    "email": "Email",
+    "password": "Password"
+  }
+}

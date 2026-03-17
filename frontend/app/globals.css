@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700&display=swap');
+
+:root {
+  --gamma-blue: #1A56C4;
+  --gamma-gold: #F5A800;
+  --gamma-dark: #1A2E4A;
+}
+
+[dir="rtl"] {
+  font-family: "Noto Sans Arabic", sans-serif;
+}
