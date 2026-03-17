@@ -45,8 +45,10 @@ def do_run_migrations(connection):
 
 
 async def run_async_migrations():
+    from app.core.config import settings
     configuration = config.get_section(config.config_ini_section, {})
-    configuration["sqlalchemy.url"] = configuration["sqlalchemy.url"]
+    db_url = settings.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://").replace("postgres://", "postgresql+asyncpg://")
+    configuration["sqlalchemy.url"] = db_url
     connectable = async_engine_from_config(
         configuration, prefix="sqlalchemy.", poolclass=pool.NullPool
     )
