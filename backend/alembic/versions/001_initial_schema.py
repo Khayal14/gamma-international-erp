@@ -17,98 +17,146 @@ down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
-# Define all enum types with create_type=False so op.create_table won't try
-# to CREATE TYPE again (we call .create() explicitly at the top of upgrade()).
-userrole_t = postgresql.ENUM('ADMIN', 'SALES_REP', 'WAREHOUSE', 'ACCOUNTANT',
-                              name='userrole', create_type=False)
-branchcode_t = postgresql.ENUM('GI', 'GIE', 'GEE',
-                                name='branchcode', create_type=False)
-language_t = postgresql.ENUM('EN', 'AR',
-                              name='language', create_type=False)
-theme_t = postgresql.ENUM('LIGHT', 'DARK',
-                           name='theme', create_type=False)
-category_t = postgresql.ENUM('LED_LIGHTS', 'HEATER_THERMOCOUPLE', 'SOLAR_AC', 'TRADE',
-                              name='category', create_type=False)
-clienttype_t = postgresql.ENUM('INDIVIDUAL', 'BUSINESS',
-                                name='clienttype', create_type=False)
-suppliertype_t = postgresql.ENUM('FOREIGN', 'LOCAL',
-                                  name='suppliertype', create_type=False)
-leadstatus_t = postgresql.ENUM('NEW', 'SUPPLIER_CONTACTED', 'OFFER_SENT', 'WON', 'LOST',
-                                name='leadstatus', create_type=False)
-itemtype_t = postgresql.ENUM('RAW_MATERIAL', 'FINAL_PRODUCT',
-                              name='itemtype', create_type=False)
-costcomponenttype_t = postgresql.ENUM('LABOUR', 'FREIGHT', 'CUSTOMS', 'OVERHEAD',
-                                       name='costcomponenttype', create_type=False)
-offerstatus_t = postgresql.ENUM('DRAFT', 'SENT', 'ACCEPTED', 'REJECTED', 'EXPIRED', 'SUPERSEDED',
-                                 name='offerstatus', create_type=False)
-paymenttype_t = postgresql.ENUM('SINGLE', 'TWO_STAGE',
-                                 name='paymenttype', create_type=False)
-offerlinetype_t = postgresql.ENUM('PRODUCT', 'SERVICE', 'CUSTOM',
-                                   name='offerlinetype', create_type=False)
-linesource_t = postgresql.ENUM('FROM_STOCK', 'IMPORT_ORDER', 'PRODUCTION',
-                                name='linesource', create_type=False)
-salesorderstatus_t = postgresql.ENUM(
-    'CONFIRMED', 'AWAITING_STOCK', 'IN_PRODUCTION', 'AWAITING_SHIPMENT',
-    'READY_TO_DISPATCH', 'DISPATCHED', 'DELIVERED', 'CANCELLED',
-    name='salesorderstatus', create_type=False)
-productionstatus_t = postgresql.ENUM('PLANNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED',
-                                      name='productionstatus', create_type=False)
-productiontrigger_t = postgresql.ENUM('SALES_ORDER', 'STOCK_BUILD',
-                                       name='productiontrigger', create_type=False)
-supplierpostatus_t = postgresql.ENUM('DRAFT', 'SENT', 'CONFIRMED', 'SHIPPED', 'RECEIVED', 'CANCELLED',
-                                      name='supplierpostatus', create_type=False)
-paymentstatus_t = postgresql.ENUM('UNPAID', 'DEPOSIT_PAID', 'FULLY_PAID',
-                                   name='paymentstatus', create_type=False)
-shipmentstatus_t = postgresql.ENUM('AWAITING_DISPATCH', 'IN_TRANSIT', 'CUSTOMS', 'ARRIVED', 'RECEIVED',
-                                    name='shipmentstatus', create_type=False)
-stockmovementtype_t = postgresql.ENUM(
-    'GOODS_RECEIPT', 'PRODUCTION_OUTPUT', 'SALES_DISPATCH',
-    'RESERVATION', 'RESERVATION_RELEASE', 'TRANSFER_OUT', 'TRANSFER_IN', 'ADJUSTMENT',
-    name='stockmovementtype', create_type=False)
-transferstatus_t = postgresql.ENUM('REQUESTED', 'APPROVED', 'DISPATCHED', 'RECEIVED', 'CANCELLED',
-                                    name='transferstatus', create_type=False)
-invoicestatus_t = postgresql.ENUM('DRAFT', 'ISSUED', 'SENT', 'PARTIALLY_PAID', 'PAID', 'OVERDUE', 'VOID',
-                                   name='invoicestatus', create_type=False)
-documenttype_t = postgresql.ENUM('OFFER', 'INVOICE', 'DELIVERY_NOTE', 'SUPPLIER_PO',
-                                  name='documenttype', create_type=False)
+# Column type helpers — create_type=False so op.create_table never
+# tries to emit CREATE TYPE (we do that explicitly via op.execute).
+def _enum(*values, name):
+    return postgresql.ENUM(*values, name=name, create_type=False)
 
 
 def upgrade() -> None:
-    bind = op.get_bind()
+    # ------------------------------------------------------------------ #
+    # 1. Enum types (raw SQL — works with any connection / driver)        #
+    # ------------------------------------------------------------------ #
+    op.execute(sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE userrole AS ENUM ('ADMIN','SALES_REP','WAREHOUSE','ACCOUNTANT');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    """))
+    op.execute(sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE branchcode AS ENUM ('GI','GIE','GEE');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    """))
+    op.execute(sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE language AS ENUM ('EN','AR');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    """))
+    op.execute(sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE theme AS ENUM ('LIGHT','DARK');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    """))
+    op.execute(sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE category AS ENUM ('LED_LIGHTS','HEATER_THERMOCOUPLE','SOLAR_AC','TRADE');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    """))
+    op.execute(sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE clienttype AS ENUM ('INDIVIDUAL','BUSINESS');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    """))
+    op.execute(sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE suppliertype AS ENUM ('FOREIGN','LOCAL');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    """))
+    op.execute(sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE leadstatus AS ENUM ('NEW','SUPPLIER_CONTACTED','OFFER_SENT','WON','LOST');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    """))
+    op.execute(sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE itemtype AS ENUM ('RAW_MATERIAL','FINAL_PRODUCT');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    """))
+    op.execute(sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE costcomponenttype AS ENUM ('LABOUR','FREIGHT','CUSTOMS','OVERHEAD');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    """))
+    op.execute(sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE offerstatus AS ENUM ('DRAFT','SENT','ACCEPTED','REJECTED','EXPIRED','SUPERSEDED');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    """))
+    op.execute(sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE paymenttype AS ENUM ('SINGLE','TWO_STAGE');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    """))
+    op.execute(sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE offerlinetype AS ENUM ('PRODUCT','SERVICE','CUSTOM');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    """))
+    op.execute(sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE linesource AS ENUM ('FROM_STOCK','IMPORT_ORDER','PRODUCTION');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    """))
+    op.execute(sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE salesorderstatus AS ENUM (
+                'CONFIRMED','AWAITING_STOCK','IN_PRODUCTION','AWAITING_SHIPMENT',
+                'READY_TO_DISPATCH','DISPATCHED','DELIVERED','CANCELLED'
+            );
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    """))
+    op.execute(sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE productionstatus AS ENUM ('PLANNED','IN_PROGRESS','COMPLETED','CANCELLED');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    """))
+    op.execute(sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE productiontrigger AS ENUM ('SALES_ORDER','STOCK_BUILD');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    """))
+    op.execute(sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE supplierpostatus AS ENUM ('DRAFT','SENT','CONFIRMED','SHIPPED','RECEIVED','CANCELLED');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    """))
+    op.execute(sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE paymentstatus AS ENUM ('UNPAID','DEPOSIT_PAID','FULLY_PAID');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    """))
+    op.execute(sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE shipmentstatus AS ENUM ('AWAITING_DISPATCH','IN_TRANSIT','CUSTOMS','ARRIVED','RECEIVED');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    """))
+    op.execute(sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE stockmovementtype AS ENUM (
+                'GOODS_RECEIPT','PRODUCTION_OUTPUT','SALES_DISPATCH',
+                'RESERVATION','RESERVATION_RELEASE','TRANSFER_OUT','TRANSFER_IN','ADJUSTMENT'
+            );
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    """))
+    op.execute(sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE transferstatus AS ENUM ('REQUESTED','APPROVED','DISPATCHED','RECEIVED','CANCELLED');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    """))
+    op.execute(sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE invoicestatus AS ENUM ('DRAFT','ISSUED','SENT','PARTIALLY_PAID','PAID','OVERDUE','VOID');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    """))
+    op.execute(sa.text("""
+        DO $$ BEGIN
+            CREATE TYPE documenttype AS ENUM ('OFFER','INVOICE','DELIVERY_NOTE','SUPPLIER_PO');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+    """))
 
-    # Create all enum types explicitly (checkfirst=True is safe for reruns)
-    for enum in [
-        postgresql.ENUM('ADMIN', 'SALES_REP', 'WAREHOUSE', 'ACCOUNTANT', name='userrole'),
-        postgresql.ENUM('GI', 'GIE', 'GEE', name='branchcode'),
-        postgresql.ENUM('EN', 'AR', name='language'),
-        postgresql.ENUM('LIGHT', 'DARK', name='theme'),
-        postgresql.ENUM('LED_LIGHTS', 'HEATER_THERMOCOUPLE', 'SOLAR_AC', 'TRADE', name='category'),
-        postgresql.ENUM('INDIVIDUAL', 'BUSINESS', name='clienttype'),
-        postgresql.ENUM('FOREIGN', 'LOCAL', name='suppliertype'),
-        postgresql.ENUM('NEW', 'SUPPLIER_CONTACTED', 'OFFER_SENT', 'WON', 'LOST', name='leadstatus'),
-        postgresql.ENUM('RAW_MATERIAL', 'FINAL_PRODUCT', name='itemtype'),
-        postgresql.ENUM('LABOUR', 'FREIGHT', 'CUSTOMS', 'OVERHEAD', name='costcomponenttype'),
-        postgresql.ENUM('DRAFT', 'SENT', 'ACCEPTED', 'REJECTED', 'EXPIRED', 'SUPERSEDED', name='offerstatus'),
-        postgresql.ENUM('SINGLE', 'TWO_STAGE', name='paymenttype'),
-        postgresql.ENUM('PRODUCT', 'SERVICE', 'CUSTOM', name='offerlinetype'),
-        postgresql.ENUM('FROM_STOCK', 'IMPORT_ORDER', 'PRODUCTION', name='linesource'),
-        postgresql.ENUM('CONFIRMED', 'AWAITING_STOCK', 'IN_PRODUCTION', 'AWAITING_SHIPMENT',
-                        'READY_TO_DISPATCH', 'DISPATCHED', 'DELIVERED', 'CANCELLED', name='salesorderstatus'),
-        postgresql.ENUM('PLANNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED', name='productionstatus'),
-        postgresql.ENUM('SALES_ORDER', 'STOCK_BUILD', name='productiontrigger'),
-        postgresql.ENUM('DRAFT', 'SENT', 'CONFIRMED', 'SHIPPED', 'RECEIVED', 'CANCELLED', name='supplierpostatus'),
-        postgresql.ENUM('UNPAID', 'DEPOSIT_PAID', 'FULLY_PAID', name='paymentstatus'),
-        postgresql.ENUM('AWAITING_DISPATCH', 'IN_TRANSIT', 'CUSTOMS', 'ARRIVED', 'RECEIVED', name='shipmentstatus'),
-        postgresql.ENUM('GOODS_RECEIPT', 'PRODUCTION_OUTPUT', 'SALES_DISPATCH',
-                        'RESERVATION', 'RESERVATION_RELEASE', 'TRANSFER_OUT', 'TRANSFER_IN', 'ADJUSTMENT',
-                        name='stockmovementtype'),
-        postgresql.ENUM('REQUESTED', 'APPROVED', 'DISPATCHED', 'RECEIVED', 'CANCELLED', name='transferstatus'),
-        postgresql.ENUM('DRAFT', 'ISSUED', 'SENT', 'PARTIALLY_PAID', 'PAID', 'OVERDUE', 'VOID', name='invoicestatus'),
-        postgresql.ENUM('OFFER', 'INVOICE', 'DELIVERY_NOTE', 'SUPPLIER_PO', name='documenttype'),
-    ]:
-        enum.create(bind, checkfirst=True)
-
-    # --- Tables ---
+    # ------------------------------------------------------------------ #
+    # 2. Tables                                                           #
+    # ------------------------------------------------------------------ #
 
     op.create_table(
         'users',
@@ -116,10 +164,10 @@ def upgrade() -> None:
         sa.Column('full_name', sa.String(255), nullable=False),
         sa.Column('email', sa.String(255), unique=True, nullable=False),
         sa.Column('password_hash', sa.String(), nullable=False),
-        sa.Column('role', userrole_t, nullable=False),
+        sa.Column('role', _enum('ADMIN','SALES_REP','WAREHOUSE','ACCOUNTANT', name='userrole'), nullable=False),
         sa.Column('branch_ids', postgresql.ARRAY(postgresql.UUID(as_uuid=True)), nullable=False),
-        sa.Column('default_language', language_t, nullable=False),
-        sa.Column('theme', theme_t, nullable=False),
+        sa.Column('default_language', _enum('EN','AR', name='language'), nullable=False),
+        sa.Column('theme', _enum('LIGHT','DARK', name='theme'), nullable=False),
         sa.Column('is_active', sa.Boolean(), nullable=False),
         sa.Column('last_login_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
@@ -130,7 +178,7 @@ def upgrade() -> None:
     op.create_table(
         'branches',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, nullable=False),
-        sa.Column('code', branchcode_t, nullable=False),
+        sa.Column('code', _enum('GI','GIE','GEE', name='branchcode'), nullable=False),
         sa.Column('legal_name_en', sa.String(255), nullable=False),
         sa.Column('legal_name_ar', sa.String(255), nullable=False),
         sa.Column('address_en', sa.String(), nullable=True),
@@ -163,8 +211,8 @@ def upgrade() -> None:
         'tc_templates',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, nullable=False),
         sa.Column('branch_id', postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column('document_type', documenttype_t, nullable=False),
-        sa.Column('language', language_t, nullable=False),
+        sa.Column('document_type', _enum('OFFER','INVOICE','DELIVERY_NOTE','SUPPLIER_PO', name='documenttype'), nullable=False),
+        sa.Column('language', _enum('EN','AR', name='language'), nullable=False),
         sa.Column('content_en', sa.String(), nullable=True),
         sa.Column('content_ar', sa.String(), nullable=True),
         sa.Column('is_default', sa.Boolean(), nullable=False),
@@ -176,10 +224,10 @@ def upgrade() -> None:
         'clients',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, nullable=False),
         sa.Column('branch_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('category', category_t, nullable=False),
+        sa.Column('category', _enum('LED_LIGHTS','HEATER_THERMOCOUPLE','SOLAR_AC','TRADE', name='category'), nullable=False),
         sa.Column('name_en', sa.String(255), nullable=False),
         sa.Column('name_ar', sa.String(255), nullable=True),
-        sa.Column('client_type', clienttype_t, nullable=False),
+        sa.Column('client_type', _enum('INDIVIDUAL','BUSINESS', name='clienttype'), nullable=False),
         sa.Column('email', sa.String(255), nullable=True),
         sa.Column('phone', sa.String(30), nullable=True),
         sa.Column('country', sa.String(100), nullable=True),
@@ -202,7 +250,7 @@ def upgrade() -> None:
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, nullable=False),
         sa.Column('name', sa.String(255), nullable=False),
         sa.Column('country', sa.String(100), nullable=True),
-        sa.Column('supplier_type', suppliertype_t, nullable=False),
+        sa.Column('supplier_type', _enum('FOREIGN','LOCAL', name='suppliertype'), nullable=False),
         sa.Column('email', sa.String(255), nullable=True),
         sa.Column('phone', sa.String(30), nullable=True),
         sa.Column('preferred_currency', sa.String(3), nullable=False),
@@ -231,13 +279,13 @@ def upgrade() -> None:
         'leads',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, nullable=False),
         sa.Column('branch_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('category', category_t, nullable=False),
+        sa.Column('category', _enum('LED_LIGHTS','HEATER_THERMOCOUPLE','SOLAR_AC','TRADE', name='category'), nullable=False),
         sa.Column('client_id', postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column('prospect_name', sa.String(255), nullable=True),
         sa.Column('prospect_contact', sa.Text(), nullable=True),
         sa.Column('product_description', sa.Text(), nullable=True),
         sa.Column('estimated_quantity', sa.Numeric(14, 4), nullable=True),
-        sa.Column('status', leadstatus_t, nullable=False),
+        sa.Column('status', _enum('NEW','SUPPLIER_CONTACTED','OFFER_SENT','WON','LOST', name='leadstatus'), nullable=False),
         sa.Column('source', sa.String(100), nullable=True),
         sa.Column('assigned_to', postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column('notes', sa.Text(), nullable=True),
@@ -249,8 +297,8 @@ def upgrade() -> None:
     op.create_table(
         'products',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, nullable=False),
-        sa.Column('category', category_t, nullable=False),
-        sa.Column('item_type', itemtype_t, nullable=False),
+        sa.Column('category', _enum('LED_LIGHTS','HEATER_THERMOCOUPLE','SOLAR_AC','TRADE', name='category'), nullable=False),
+        sa.Column('item_type', _enum('RAW_MATERIAL','FINAL_PRODUCT', name='itemtype'), nullable=False),
         sa.Column('code', sa.String(50), nullable=False),
         sa.Column('name_en', sa.String(255), nullable=False),
         sa.Column('name_ar', sa.String(255), nullable=True),
@@ -300,7 +348,7 @@ def upgrade() -> None:
         'product_cost_components',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, nullable=False),
         sa.Column('product_variant_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('component_type', costcomponenttype_t, nullable=False),
+        sa.Column('component_type', _enum('LABOUR','FREIGHT','CUSTOMS','OVERHEAD', name='costcomponenttype'), nullable=False),
         sa.Column('amount', sa.Numeric(12, 4), nullable=False),
         sa.Column('cost_currency', sa.String(3), nullable=False),
         sa.Column('notes', sa.Text(), nullable=True),
@@ -313,7 +361,7 @@ def upgrade() -> None:
         sa.Column('pi_number', sa.String(50), nullable=True),
         sa.Column('supplier_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('branch_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('category', category_t, nullable=False),
+        sa.Column('category', _enum('LED_LIGHTS','HEATER_THERMOCOUPLE','SOLAR_AC','TRADE', name='category'), nullable=False),
         sa.Column('lead_id', postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column('currency', sa.String(3), nullable=False),
         sa.Column('fx_rate_snapshot', sa.Numeric(12, 6), nullable=True),
@@ -349,11 +397,11 @@ def upgrade() -> None:
         sa.Column('version', sa.Integer(), nullable=False),
         sa.Column('parent_offer_id', postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column('branch_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('category', category_t, nullable=False),
+        sa.Column('category', _enum('LED_LIGHTS','HEATER_THERMOCOUPLE','SOLAR_AC','TRADE', name='category'), nullable=False),
         sa.Column('client_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('lead_id', postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column('supplier_pi_id', postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column('status', offerstatus_t, nullable=False),
+        sa.Column('status', _enum('DRAFT','SENT','ACCEPTED','REJECTED','EXPIRED','SUPERSEDED', name='offerstatus'), nullable=False),
         sa.Column('sell_currency', sa.String(3), nullable=False),
         sa.Column('fx_rate_used', sa.Numeric(12, 6), nullable=True),
         sa.Column('warranty_duration', sa.String(100), nullable=True),
@@ -362,7 +410,7 @@ def upgrade() -> None:
         sa.Column('vat_rate', sa.Numeric(5, 2), nullable=False),
         sa.Column('vat_amount', sa.Numeric(14, 2), nullable=False),
         sa.Column('total', sa.Numeric(14, 2), nullable=False),
-        sa.Column('payment_type', paymenttype_t, nullable=False),
+        sa.Column('payment_type', _enum('SINGLE','TWO_STAGE', name='paymenttype'), nullable=False),
         sa.Column('deposit_pct', sa.Numeric(5, 2), nullable=True),
         sa.Column('final_pct', sa.Numeric(5, 2), nullable=True),
         sa.Column('tc_content_en', sa.Text(), nullable=True),
@@ -383,7 +431,7 @@ def upgrade() -> None:
         'offer_lines',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, nullable=False),
         sa.Column('offer_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('line_type', offerlinetype_t, nullable=False),
+        sa.Column('line_type', _enum('PRODUCT','SERVICE','CUSTOM', name='offerlinetype'), nullable=False),
         sa.Column('product_variant_id', postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column('pi_line_id', postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column('description_en', sa.Text(), nullable=False),
@@ -395,7 +443,7 @@ def upgrade() -> None:
         sa.Column('markup_pct', sa.Numeric(5, 2), nullable=True),
         sa.Column('unit_price', sa.Numeric(12, 4), nullable=False),
         sa.Column('line_total', sa.Numeric(14, 2), nullable=False),
-        sa.Column('source', linesource_t, nullable=True),
+        sa.Column('source', _enum('FROM_STOCK','IMPORT_ORDER','PRODUCTION', name='linesource'), nullable=True),
         sa.Column('sort_order', sa.Integer(), nullable=False),
     )
     op.create_index('ix_offer_lines_offer_id', 'offer_lines', ['offer_id'])
@@ -405,18 +453,22 @@ def upgrade() -> None:
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, nullable=False),
         sa.Column('order_number', sa.String(30), nullable=False),
         sa.Column('branch_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('category', category_t, nullable=False),
+        sa.Column('category', _enum('LED_LIGHTS','HEATER_THERMOCOUPLE','SOLAR_AC','TRADE', name='category'), nullable=False),
         sa.Column('client_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('offer_id', postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column('client_po_reference', sa.String(100), nullable=True),
-        sa.Column('status', salesorderstatus_t, nullable=False),
+        sa.Column('status', _enum(
+            'CONFIRMED','AWAITING_STOCK','IN_PRODUCTION','AWAITING_SHIPMENT',
+            'READY_TO_DISPATCH','DISPATCHED','DELIVERED','CANCELLED',
+            name='salesorderstatus',
+        ), nullable=False),
         sa.Column('sell_currency', sa.String(3), nullable=False),
         sa.Column('fx_rate_used', sa.Numeric(12, 6), nullable=True),
         sa.Column('subtotal', sa.Numeric(14, 2), nullable=False),
         sa.Column('vat_rate', sa.Numeric(5, 2), nullable=False),
         sa.Column('vat_amount', sa.Numeric(14, 2), nullable=False),
         sa.Column('total', sa.Numeric(14, 2), nullable=False),
-        sa.Column('payment_type', paymenttype_t, nullable=False),
+        sa.Column('payment_type', _enum('SINGLE','TWO_STAGE', name='paymenttype'), nullable=False),
         sa.Column('deposit_pct', sa.Numeric(5, 2), nullable=True),
         sa.Column('deposit_paid_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('final_pct', sa.Numeric(5, 2), nullable=True),
@@ -449,10 +501,10 @@ def upgrade() -> None:
         'production_runs',
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, nullable=False),
         sa.Column('branch_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('category', category_t, nullable=False),
-        sa.Column('trigger_type', productiontrigger_t, nullable=False),
+        sa.Column('category', _enum('LED_LIGHTS','HEATER_THERMOCOUPLE','SOLAR_AC','TRADE', name='category'), nullable=False),
+        sa.Column('trigger_type', _enum('SALES_ORDER','STOCK_BUILD', name='productiontrigger'), nullable=False),
         sa.Column('sales_order_id', postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column('status', productionstatus_t, nullable=False),
+        sa.Column('status', _enum('PLANNED','IN_PROGRESS','COMPLETED','CANCELLED', name='productionstatus'), nullable=False),
         sa.Column('planned_start_date', sa.Date(), nullable=True),
         sa.Column('completed_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('notes', sa.Text(), nullable=True),
@@ -487,19 +539,19 @@ def upgrade() -> None:
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, nullable=False),
         sa.Column('po_number', sa.String(30), nullable=False),
         sa.Column('branch_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('category', category_t, nullable=False),
+        sa.Column('category', _enum('LED_LIGHTS','HEATER_THERMOCOUPLE','SOLAR_AC','TRADE', name='category'), nullable=False),
         sa.Column('supplier_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('sales_order_id', postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column('supplier_pi_id', postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column('status', supplierpostatus_t, nullable=False),
+        sa.Column('status', _enum('DRAFT','SENT','CONFIRMED','SHIPPED','RECEIVED','CANCELLED', name='supplierpostatus'), nullable=False),
         sa.Column('currency', sa.String(3), nullable=False),
         sa.Column('fx_rate_at_order', sa.Numeric(12, 6), nullable=True),
         sa.Column('subtotal_foreign', sa.Numeric(14, 4), nullable=False),
         sa.Column('shipping_cost_foreign', sa.Numeric(14, 4), nullable=True),
         sa.Column('total_foreign', sa.Numeric(14, 4), nullable=False),
-        sa.Column('payment_type', paymenttype_t, nullable=False),
+        sa.Column('payment_type', _enum('SINGLE','TWO_STAGE', name='paymenttype'), nullable=False),
         sa.Column('deposit_pct', sa.Numeric(5, 2), nullable=True),
-        sa.Column('payment_status', paymentstatus_t, nullable=False),
+        sa.Column('payment_status', _enum('UNPAID','DEPOSIT_PAID','FULLY_PAID', name='paymentstatus'), nullable=False),
         sa.Column('delivery_destination', sa.Text(), nullable=True),
         sa.Column('expected_lead_time', sa.String(100), nullable=True),
         sa.Column('order_date', sa.Date(), nullable=True),
@@ -531,7 +583,7 @@ def upgrade() -> None:
         sa.Column('branch_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('tracking_reference', sa.String(100), nullable=True),
         sa.Column('shipping_method', sa.String(50), nullable=True),
-        sa.Column('status', shipmentstatus_t, nullable=False),
+        sa.Column('status', _enum('AWAITING_DISPATCH','IN_TRANSIT','CUSTOMS','ARRIVED','RECEIVED', name='shipmentstatus'), nullable=False),
         sa.Column('origin_country', sa.String(100), nullable=True),
         sa.Column('estimated_arrival_date', sa.Date(), nullable=True),
         sa.Column('actual_arrival_date', sa.Date(), nullable=True),
@@ -562,7 +614,11 @@ def upgrade() -> None:
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, nullable=False),
         sa.Column('branch_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('product_variant_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('movement_type', stockmovementtype_t, nullable=False),
+        sa.Column('movement_type', _enum(
+            'GOODS_RECEIPT','PRODUCTION_OUTPUT','SALES_DISPATCH',
+            'RESERVATION','RESERVATION_RELEASE','TRANSFER_OUT','TRANSFER_IN','ADJUSTMENT',
+            name='stockmovementtype',
+        ), nullable=False),
         sa.Column('quantity', sa.Numeric(14, 4), nullable=False),
         sa.Column('reference_type', sa.String(50), nullable=True),
         sa.Column('reference_id', postgresql.UUID(as_uuid=True), nullable=True),
@@ -579,7 +635,7 @@ def upgrade() -> None:
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, nullable=False),
         sa.Column('from_branch_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('to_branch_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('status', transferstatus_t, nullable=False),
+        sa.Column('status', _enum('REQUESTED','APPROVED','DISPATCHED','RECEIVED','CANCELLED', name='transferstatus'), nullable=False),
         sa.Column('requested_by', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('approved_by', postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column('notes', sa.Text(), nullable=True),
@@ -603,17 +659,17 @@ def upgrade() -> None:
         sa.Column('id', postgresql.UUID(as_uuid=True), primary_key=True, nullable=False),
         sa.Column('invoice_number', sa.String(30), nullable=False),
         sa.Column('branch_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('category', category_t, nullable=False),
+        sa.Column('category', _enum('LED_LIGHTS','HEATER_THERMOCOUPLE','SOLAR_AC','TRADE', name='category'), nullable=False),
         sa.Column('client_id', postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column('sales_order_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('status', invoicestatus_t, nullable=False),
+        sa.Column('status', _enum('DRAFT','ISSUED','SENT','PARTIALLY_PAID','PAID','OVERDUE','VOID', name='invoicestatus'), nullable=False),
         sa.Column('sell_currency', sa.String(3), nullable=False),
         sa.Column('fx_rate_used', sa.Numeric(12, 6), nullable=True),
         sa.Column('subtotal', sa.Numeric(14, 2), nullable=False),
         sa.Column('vat_rate', sa.Numeric(5, 2), nullable=False),
         sa.Column('vat_amount', sa.Numeric(14, 2), nullable=False),
         sa.Column('total', sa.Numeric(14, 2), nullable=False),
-        sa.Column('payment_type', paymenttype_t, nullable=False),
+        sa.Column('payment_type', _enum('SINGLE','TWO_STAGE', name='paymenttype'), nullable=False),
         sa.Column('deposit_amount', sa.Numeric(14, 2), nullable=True),
         sa.Column('deposit_paid_at', sa.DateTime(timezone=True), nullable=True),
         sa.Column('final_amount', sa.Numeric(14, 2), nullable=True),
@@ -652,9 +708,6 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    bind = op.get_bind()
-
-    # Drop tables in reverse dependency order
     for table in [
         'delivery_notes', 'invoices', 'branch_stock_transfer_lines',
         'branch_stock_transfers', 'stock_movements', 'stock_levels',
@@ -668,7 +721,6 @@ def downgrade() -> None:
     ]:
         op.drop_table(table)
 
-    # Drop enum types
     for enum_name in [
         'documenttype', 'invoicestatus', 'transferstatus', 'stockmovementtype',
         'shipmentstatus', 'paymentstatus', 'supplierpostatus', 'productiontrigger',
@@ -677,4 +729,4 @@ def downgrade() -> None:
         'leadstatus', 'suppliertype', 'clienttype', 'category',
         'theme', 'language', 'branchcode', 'userrole',
     ]:
-        postgresql.ENUM(name=enum_name, create_type=False).drop(bind, checkfirst=True)
+        op.execute(sa.text(f'DROP TYPE IF EXISTS {enum_name}'))
